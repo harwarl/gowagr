@@ -1,4 +1,4 @@
-import { Account } from 'src/account/entities/account.entity';
+import { Account } from '../../account/entities/account.entity';
 import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
 
 @Entity({ name: 'transactions' })
@@ -23,4 +23,7 @@ export class Transaction {
 
   @ManyToOne(() => Account, (account) => account.recieved_transactions)
   receiver: Account;
+
+  @Column({ type: 'datetime', default: () => 'CURRENT_TIMESTAMP(6)' })
+  created_at: Date;
 }

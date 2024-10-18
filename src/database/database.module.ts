@@ -39,6 +39,7 @@ import { DataSource } from 'typeorm';
 
           await dataSource.initialize();
           console.log('Database connected successfully');
+          return dataSource;
         } catch (error) {
           return error;
         }

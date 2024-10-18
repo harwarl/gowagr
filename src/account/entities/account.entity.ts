@@ -1,5 +1,5 @@
-import { Transaction } from 'src/transaction/entities/transaction.entity';
-import { User } from 'src/user/entities/user.entity';
+import { Transaction } from '../../transaction/entities/transaction.entity';
+import { User } from '../../user/entities/user.entity';
 import {
   Column,
   CreateDateColumn,
@@ -18,7 +18,7 @@ export class Account {
     type: 'varchar',
     length: 10,
   })
-  number: number;
+  account_number: string;
 
   @Column({ type: 'decimal', precision: 10, scale: 2, default: 0.0 })
   balance: number;
