@@ -27,12 +27,14 @@ export class AuthService {
   }
 
   async register(createUserDto: CreateUserDto): Promise<UserType> {
-    const user = await this.userService.findUserByEmail(createUserDto.email);
+    const user: UserType = await this.userService.findUserByEmail(
+      createUserDto.email,
+    );
     if (user) {
       throw new BadRequestException('Email already exists');
     }
-    // const newUser = awiat this.userService
-    return user;
+    const newUser: UserType = await this.userService.createUser(createUserDto);
+    return newUser;
   }
 
   async login(user: any) {
