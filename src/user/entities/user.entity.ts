@@ -41,7 +41,7 @@ export class User {
   @Column({ type: 'varchar', length: 13 })
   phone_number: string;
 
-  @OneToOne(() => Account)
+  @OneToOne(() => Account, (account) => account.user)
   @JoinColumn()
   account: Account;
 
