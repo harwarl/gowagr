@@ -6,7 +6,6 @@ import {
 import { UserType } from './types/user.type';
 import { DataSource, Repository } from 'typeorm';
 import { User } from './entities/user.entity';
-import { IUser } from 'src/types/types';
 import { CreateUserDto } from './dto/create-user.dto';
 import { Account } from 'src/account/entities/account.entity';
 import { UpdateUserDto } from './dto/update-user.dto';

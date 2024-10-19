@@ -6,12 +6,11 @@ import {
 import { DataSource, Repository } from 'typeorm';
 import { Account } from './entities/account.entity';
 import { Transaction } from 'src/transaction/entities/transaction.entity';
-import { User } from 'src/user/entities/user.entity';
 import { UserService } from 'src/user/user.service';
 import { CreateTransferDto } from './dto/createTransfer.dto';
 import { v4 as uuidv4 } from 'uuid';
 import { CreateTransactionDto } from './dto/createTransaction.dto';
-import { TransactionType } from 'src/types/types';
+import { TransactionType } from 'src/utils/types';
 
 @Injectable()
 export class AccountService {
