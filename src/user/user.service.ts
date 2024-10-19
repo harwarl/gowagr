@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { UserType } from './types/user.type';
 import { DataSource } from 'typeorm';
 import { User } from './entities/user.entity';
@@ -6,10 +10,12 @@ import { IUser } from 'src/types/types';
 import { CreateUserDto } from './dto/create-user.dto';
 import { Account } from 'src/account/entities/account.entity';
 import { UpdateUserDto } from './dto/update-user.dto';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class UserService {
   constructor(private dataSource: DataSource) {}
+
   //Find User by Email
   async findUserByEmail(email: string): Promise<UserType> {
     const user = await this.dataSource
@@ -47,6 +53,7 @@ export class UserService {
     createUserDto.phone_number = this.adjustPhoneNumber(
       createUserDto.phone_number,
     );
+    createUserDto.password = await bcrypt.hash(createUserDto.password, 10);
 
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
@@ -63,6 +70,9 @@ export class UserService {
     } catch (error) {
       await queryRunner.rollbackTransaction();
       console.error('Transaction failed:', error);
+      if (error.code === '23505') {
+        throw new ConflictException('Username / Phone number already exist');
+      }
       throw new Error('Failed to create user and account');
     } finally {
       await queryRunner.release();

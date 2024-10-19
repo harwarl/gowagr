@@ -7,7 +7,6 @@ import {
   OneToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
-import * as bcrypt from 'bcrypt';
 import { Account } from '../../account/entities/account.entity';
 
 @Entity({ name: 'users' })
@@ -32,17 +31,16 @@ export class User {
   @Column({ type: 'varchar', length: 45 })
   email: string;
 
-  @Column({ type: 'varchar', length: 45 })
+  @Column({ type: 'varchar', length: 225 })
   password: string;
 
   @Column({ type: 'varchar', unique: true, length: 20 })
   username: string;
 
-  @Column({ type: 'varchar', length: 13 })
+  @Column({ type: 'varchar', length: 14, unique: true })
   phone_number: string;
 
   @OneToOne(() => Account, (account) => account.user)
-  @JoinColumn()
   account: Account;
 
   @CreateDateColumn({
@@ -50,9 +48,4 @@ export class User {
     default: () => 'CURRENT_TIMESTAMP(6)',
   })
   created_at: Date;
-
-  @BeforeInsert()
-  async hashPassword() {
-    this.password = await bcrypt.hash(this.password, 10);
-  }
 }

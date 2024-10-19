@@ -21,6 +21,7 @@ export class CreateUserDto {
   })
   @IsString()
   last_name: string;
+  
   @ApiProperty({
     example: 'JohnDoe@JohnDoe.com',
     required: true,

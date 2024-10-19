@@ -6,6 +6,7 @@ import {
   Entity,
   OneToMany,
   OneToOne,
+  JoinColumn,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 
@@ -24,6 +25,7 @@ export class Account {
   balance: number;
 
   @OneToOne(() => User, (user) => user.account)
+  @JoinColumn()
   user: User;
 
   @OneToMany(() => Transaction, (transaction) => transaction.sender)

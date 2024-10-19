@@ -24,6 +24,6 @@ export class Transaction {
   @ManyToOne(() => Account, (account) => account.recieved_transactions)
   receiver: Account;
 
-  @Column({ type: 'datetime', default: () => 'CURRENT_TIMESTAMP(6)' })
+  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP(6)' })
   created_at: Date;
 }

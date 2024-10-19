@@ -18,7 +18,7 @@ export class AuthService {
       throw new BadRequestException('Invalid Credentials');
     }
 
-    const isPasswordValid = await bcrypt.compare(user.password, password);
+    const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
       throw new BadRequestException('Invalid Credentials');
     }
@@ -39,7 +39,7 @@ export class AuthService {
 
   async login(user: any) {
     const payload = { email: user.email, id: user.id };
-    return this.getToken(payload);
+    return { access_token: this.getToken(payload) };
   }
 
   getToken(payload: any) {

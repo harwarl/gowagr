@@ -6,7 +6,8 @@ import { UserModule } from './user/user.module';
 import { AccountModule } from './account/account.module';
 import { TransactionModule } from './transaction/transaction.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { DatabaseModule } from './database/database.module';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import PostgresDataSource, { dataSourceOptions } from './database/data-source';
 
 @Module({
   imports: [
@@ -14,7 +15,7 @@ import { DatabaseModule } from './database/database.module';
       isGlobal: true,
       envFilePath: './.env',
     }),
-    DatabaseModule,
+    TypeOrmModule.forRoot(dataSourceOptions),
     AuthModule,
     UserModule,
     AccountModule,
