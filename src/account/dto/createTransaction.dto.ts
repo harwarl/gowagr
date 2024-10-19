@@ -20,6 +20,4 @@ export class CreateTransactionDto {
   status: string;
   @IsUUID()
   reference_id: string;
-  @IsString()
-  transaction_type: string;
 }

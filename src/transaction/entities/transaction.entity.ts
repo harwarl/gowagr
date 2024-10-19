@@ -18,9 +18,6 @@ export class Transaction {
   })
   reference_id: string;
 
-  @Column({ type: 'varchar', length: 6 })
-  transaction_type: string;
-
   @Column({
     type: 'varchar',
   })

@@ -11,6 +11,7 @@ import { UserService } from 'src/user/user.service';
 import { CreateTransferDto } from './dto/createTransfer.dto';
 import { v4 as uuidv4 } from 'uuid';
 import { CreateTransactionDto } from './dto/createTransaction.dto';
+import { TransactionType } from 'src/types/types';
 
 @Injectable()
 export class AccountService {
@@ -25,7 +26,10 @@ export class AccountService {
   }
 
   async createTransfer(createTransferDto: CreateTransferDto): Promise<any> {
-    console.log({ createTransferDto });
+    if (createTransferDto.sender_id === createTransferDto.recipient_id) {
+      throw new BadRequestException('You can transfer to yourself');
+    }
+
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
@@ -43,12 +47,11 @@ export class AccountService {
 
       //   check if the sender has sufficient Balance
       if (sendersAccount.balance < createTransferDto.amount) {
-        const transaction = await this.createTransaction({
+        await this.createTransaction({
           sender: sendersAccount,
           receiver: recipientAccount,
           status: 'failed',
           reference_id: uuidv4(),
-          transaction_type: 'DEBIT',
           amount: createTransferDto.amount,
           created_at: new Date(),
         });
@@ -56,8 +59,7 @@ export class AccountService {
       }
 
       //Deduct Amount from the sender
-      sendersAccount.balance =
-        parseFloat(sendersAccount.balance) - createTransferDto.amount;
+      sendersAccount.balance -= createTransferDto.amount;
 
       //Add Amount to the recipient
       recipientAccount.balance =
@@ -66,7 +68,7 @@ export class AccountService {
       //Create A transaction Reciept for the Sender
       await queryRunner.manager.update(
         Account,
-        { id: sendersAccount.id },
+        { id: sendersAccount.balance },
         {
           balance: sendersAccount.balance,
         },
@@ -81,29 +83,17 @@ export class AccountService {
         },
       );
 
-      const debitTransaction = await this.createTransaction({
+      const transaction = await this.createTransaction({
         sender: sendersAccount,
         receiver: recipientAccount,
         status: 'completed',
-        transaction_type: 'DEBIT',
-        reference_id: uuidv4(),
-        amount: createTransferDto.amount,
-        created_at: new Date(),
-      });
-
-      // Create a transaction as a credit
-      const creditTransaction = await this.createTransaction({
-        sender: recipientAccount,
-        receiver: sendersAccount,
-        status: 'completed',
-        transaction_type: 'CREDIT',
         reference_id: uuidv4(),
         amount: createTransferDto.amount,
         created_at: new Date(),
       });
 
       await queryRunner.commitTransaction();
-      return { success: true, debitTransaction };
+      return { success: true, transaction };
     } catch (error) {
       await queryRunner.rollbackTransaction();
       console.log('Transfer Failed:', error);
@@ -126,8 +116,12 @@ export class AccountService {
       .getOne();
 
     let transactions = [
-      ...account.sent_transactions,
-      ...account.recieved_transactions,
+      ...account.sent_transactions.map((transaction) => {
+        return { ...transaction, transaction_type: TransactionType.DEBIT };
+      }),
+      ...account.recieved_transactions.map((transaction) => {
+        return { ...transaction, transaction_type: TransactionType.CREDIT };
+      }),
     ].sort((a, b) => {
       return (
         new Date(b.created_at).getTime() - new Date(a.created_at).getTime()

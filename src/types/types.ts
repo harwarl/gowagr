@@ -29,3 +29,8 @@ export interface ITransaction {
   sender: IAccount;
   receiver: IAccount;
 }
+
+export enum TransactionType {
+  CREDIT = 'CREDIT',
+  DEBIT = 'DEBIT',
+}
