@@ -17,7 +17,7 @@ import { LocalAuthGuard } from './guards/local.guard';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  @Post('/signup')
+  @Post('signup')
   async createUser(@Body() createUserDto: CreateUserDto) {
     return await this.authService.register(createUserDto);
   }

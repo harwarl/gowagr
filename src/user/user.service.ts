@@ -4,7 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { UserType } from './types/user.type';
-import { DataSource } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { User } from './entities/user.entity';
 import { IUser } from 'src/types/types';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -14,23 +14,23 @@ import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class UserService {
-  constructor(private dataSource: DataSource) {}
+  private userRepository: Repository<User>;
+  constructor(private dataSource: DataSource) {
+    this.userRepository = this.dataSource.getRepository(User);
+  }
 
   //Find User by Email
   async findUserByEmail(email: string): Promise<UserType> {
-    const user = await this.dataSource
-      .getRepository(User)
+    const user = await this.userRepository
       .createQueryBuilder('user')
       .where('user.email = :email', { email })
-      //   .cache(true)
       .getOne();
     return user;
   }
 
   //Find User by Id
   async findUserById(id: number): Promise<UserType> {
-    const user = await this.dataSource
-      .getRepository(User)
+    const user = await this.userRepository
       .createQueryBuilder('user')
       .where('user.id = :id', { id })
       .getOne();
@@ -39,13 +39,22 @@ export class UserService {
   }
 
   //Find User by email
-  async findUserByUsername(username: string): Promise<UserType> {
-    const user = await this.dataSource
-      .getRepository(User)
+  async findUserByUsername(username: string): Promise<UserType[]> {
+    const users = await this.userRepository
       .createQueryBuilder('user')
+      .select([
+        'user.id',
+        'user.username',
+        'user.first_name',
+        'user.last_name',
+        'user.phone_number',
+      ])
       .where('user.username LIKE :username', { username: `${username}%` })
-      .getOne();
-    return this.userResponse(user);
+      .getMany();
+    if (!users) {
+      throw new NotFoundException('User Not found');
+    }
+    return users;
   }
 
   //Create a new user
@@ -59,11 +68,13 @@ export class UserService {
     await queryRunner.connect();
     await queryRunner.startTransaction();
     try {
-      const newUser = await queryRunner.manager.save(User, createUserDto);
-      await queryRunner.manager.save(Account, {
+      const newAccount = await queryRunner.manager.save(Account, {
         account_number: this.getAccountNumber(createUserDto.phone_number),
         balance: 0.0,
-        user: newUser,
+      });
+      const newUser = await queryRunner.manager.save(User, {
+        ...createUserDto,
+        account: newAccount,
       });
       await queryRunner.commitTransaction();
       return this.userResponse(newUser);
@@ -87,8 +98,7 @@ export class UserService {
     if (!user) {
       throw new NotFoundException(`User with ID ${currentUserId} not found`);
     }
-    await this.dataSource
-      .getRepository(User)
+    await this.userRepository
       .createQueryBuilder('user')
       .update(User)
       .set(updateUserDto)
@@ -96,6 +106,20 @@ export class UserService {
       .execute();
 
     return this.findUserById(currentUserId);
+  }
+
+  async getUserDetailsWithBalance(userId: number): Promise<UserType> {
+    const user = await this.userRepository
+      .createQueryBuilder('user')
+      .innerJoinAndSelect('user.account', 'account')
+      .where('user.id = :userId', { userId })
+      .getOne();
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    return this.userResponse(user);
   }
 
   //converts phone number to +234 format

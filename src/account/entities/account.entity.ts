@@ -4,9 +4,9 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  JoinColumn,
   OneToMany,
   OneToOne,
-  JoinColumn,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 
