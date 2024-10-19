@@ -1,4 +1,4 @@
-import { Transaction } from 'src/transaction/entities/transaction.entity';
+import { Transaction } from 'src/account/entities/transaction.entity';
 import { User } from 'src/user/entities/user.entity';
 
 export interface IUser {
@@ -33,4 +33,9 @@ export interface ITransaction {
 export enum TransactionType {
   CREDIT = 'CREDIT',
   DEBIT = 'DEBIT',
+}
+
+export enum TransactionStatus {
+  COMPLETED = 'completed',
+  FAILED = 'failed',
 }

@@ -1,4 +1,4 @@
-import { Transaction } from '../../transaction/entities/transaction.entity';
+import { Transaction } from './transaction.entity';
 import { User } from '../../user/entities/user.entity';
 import {
   Column,

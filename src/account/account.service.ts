@@ -5,12 +5,12 @@ import {
 } from '@nestjs/common';
 import { DataSource, Repository } from 'typeorm';
 import { Account } from './entities/account.entity';
-import { Transaction } from 'src/transaction/entities/transaction.entity';
+import { Transaction } from 'src/account/entities/transaction.entity';
 import { UserService } from 'src/user/user.service';
 import { CreateTransferDto } from './dto/createTransfer.dto';
 import { v4 as uuidv4 } from 'uuid';
 import { CreateTransactionDto } from './dto/createTransaction.dto';
-import { TransactionType } from 'src/utils/types';
+import { TransactionStatus, TransactionType } from 'src/utils/types';
 
 @Injectable()
 export class AccountService {
@@ -44,12 +44,12 @@ export class AccountService {
         createTransferDto.recipient_id,
       );
 
-      //   check if the sender has sufficient Balance
+      //   check if the sender has sufficient Balance and save a failed transaction
       if (sendersAccount.balance < createTransferDto.amount) {
         await this.createTransaction({
           sender: sendersAccount,
           receiver: recipientAccount,
-          status: 'failed',
+          status: TransactionStatus.FAILED,
           reference_id: uuidv4(),
           amount: createTransferDto.amount,
           created_at: new Date(),
@@ -64,7 +64,7 @@ export class AccountService {
       recipientAccount.balance =
         parseFloat(recipientAccount.balance) + createTransferDto.amount;
 
-      //Create A transaction Reciept for the Sender
+      //update the senders Account
       await queryRunner.manager.update(
         Account,
         { id: sendersAccount.balance },
@@ -73,7 +73,7 @@ export class AccountService {
         },
       );
 
-      //Create A transaction Reciept for the Receiver
+      // Update the recipient balance
       await queryRunner.manager.update(
         Account,
         { id: recipientAccount.id },
@@ -82,18 +82,21 @@ export class AccountService {
         },
       );
 
+      //save the transaction
       const transaction = await this.createTransaction({
         sender: sendersAccount,
         receiver: recipientAccount,
-        status: 'completed',
+        status: TransactionStatus.COMPLETED,
         reference_id: uuidv4(),
         amount: createTransferDto.amount,
         created_at: new Date(),
       });
 
+      // commit the transaction
       await queryRunner.commitTransaction();
       return { success: true, transaction };
     } catch (error) {
+      //rollback the transaction
       await queryRunner.rollbackTransaction();
       console.log('Transfer Failed:', error);
       throw new Error(`Failed to execute transaction`);
@@ -104,15 +107,30 @@ export class AccountService {
 
   //Get User Transactions
   async getUserTransactions(userId: number): Promise<any> {
-    const account = await this.accountRepository
+    const accountQuery = this.accountRepository
       .createQueryBuilder('account')
       .leftJoinAndSelect('account.sent_transactions', 'sent_transaction')
       .leftJoinAndSelect(
         'account.recieved_transactions',
         'received_transaction',
       )
-      .where('account.userId = :userId', { userId })
+      .where('account.userId = :userId', { userId });
+
+    // if (query?.limit && query?.page >= 0) {
+    //   accountQuery.limit(query.limit);
+    //   accountQuery.offset(query.page * query.limit);
+    // } else {
+    //   accountQuery.limit(10);
+    // }
+
+    const account = await accountQuery
+      .orderBy('sent_transaction.created_at', 'DESC')
+      .orderBy('received_transaction.created_at', 'DESC')
       .getOne();
+
+    if (!account) {
+      throw new NotFoundException(`Account not found for userId: ${userId}`);
+    }
 
     let transactions = [
       ...account.sent_transactions.map((transaction) => {
@@ -121,11 +139,13 @@ export class AccountService {
       ...account.recieved_transactions.map((transaction) => {
         return { ...transaction, transaction_type: TransactionType.CREDIT };
       }),
-    ].sort((a, b) => {
-      return (
-        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-      );
-    });
+    ];
+
+    // .sort((a, b) => {
+    //   return (
+    //     new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    //   );
+    // });
 
     delete account.sent_transactions;
     delete account.recieved_transactions;
@@ -135,7 +155,6 @@ export class AccountService {
 
   //Get UserID get user Account
   async getAccountByUserId(userId: number): Promise<any> {
-    console.log({ userId });
     const account = await this.accountRepository
       .createQueryBuilder('account')
       .leftJoinAndSelect('account.user', 'user')

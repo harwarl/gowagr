@@ -4,7 +4,7 @@ import { AccountController } from './account.controller';
 import { UserModule } from 'src/user/user.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Account } from './entities/account.entity';
-import { Transaction } from 'src/transaction/entities/transaction.entity';
+import { Transaction } from 'src/account/entities/transaction.entity';
 import { User } from 'src/user/entities/user.entity';
 
 @Module({
