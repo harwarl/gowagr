@@ -1,10 +1,19 @@
-import { Controller, Get, Post, Body, Query, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Query,
+  UseGuards,
+  UsePipes,
+} from '@nestjs/common';
 import { AccountService } from './account.service';
 import { CreateTransferDto } from './dto/createTransfer.dto';
 import { JwtAuthGuard } from 'src/auth/guards/jwt.guard';
 import { CurrentUser } from 'src/user/decorators/currentUser.decorator';
 import { TransferQueryDto } from './dto/transferQuery.dto';
 import { ApiBearerAuth, ApiTags, ApiResponse } from '@nestjs/swagger';
+import { BackendValidationPipe } from 'src/utils/pipes/backendValidation.pipes';
 
 @ApiTags('Tranfer')
 @ApiBearerAuth()
@@ -13,6 +22,7 @@ export class AccountController {
   constructor(private readonly accountService: AccountService) {}
 
   @UseGuards(JwtAuthGuard)
+  @UsePipes(BackendValidationPipe)
   @Post('')
   @ApiResponse({ status: 200, description: 'Successful Response' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })

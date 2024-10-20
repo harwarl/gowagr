@@ -3,6 +3,7 @@ import { AppModule } from './app.module';
 import {
   GLOBAL_PREFIX,
   SWAGGER_DESCRIPTION,
+  SWAGGER_DOC_ENDPOINT,
   SWAGGER_LOCAL_URL,
   SWAGGER_PRODUCTION_URL,
   SWAGGER_SERVERS,
@@ -18,8 +19,6 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.enableCors({ origin: '*' });
   app.setGlobalPrefix(GLOBAL_PREFIX);
-  // app.useGlobalPipes(new ValidationPipe());
-  app.useGlobalPipes(new BackendValidationPipe());
 
   //Set up Swagger
   const config = new DocumentBuilder()
@@ -33,7 +32,7 @@ async function bootstrap() {
     .build();
 
   const documentFactory = () => SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api-docs', app, documentFactory);
+  SwaggerModule.setup(SWAGGER_DOC_ENDPOINT, app, documentFactory);
 
   await app.listen(process.env.Port ?? 3000);
 }

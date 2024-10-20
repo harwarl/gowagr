@@ -26,7 +26,7 @@ export class AccountService {
   }
 
   /**
-   * Create a new Transfer
+   * @description Create a new Transfer
    * @param createTransferDto
    * @returns
    */
@@ -112,7 +112,7 @@ export class AccountService {
   }
 
   /**
-   * GET User Transactions
+   * @description gets the user Transactions
    * @param userId
    * @param query
    * @returns
@@ -120,18 +120,22 @@ export class AccountService {
   async getUserTransactions(
     userId: number,
     query?: TransferQueryDto,
-  ): Promise<any> {
-    let page = query?.page || 1;
-    let limit = query?.limit || 10;
-    let filters = query?.filters;
+  ): Promise<{
+    transactions: Transaction[];
+    totalTransactions: number;
+    pages: number;
+    page: number;
+    limit: number;
+  }> {
+    const { page = 1, limit = 10, filters } = query || {};
 
-    //Get User Account
+    // Get User Account
     const userAccount = await this.getAccountByUserId(userId);
     if (!userAccount) {
       throw new NotFoundException('User Account not found');
     }
 
-    //Start Query
+    // Start Query
     const transactionQuery = this.transactionRepository
       .createQueryBuilder('transaction')
       .leftJoinAndSelect('transaction.sender', 'sender')
@@ -140,26 +144,28 @@ export class AccountService {
         accountId: userAccount.id,
       });
 
-    // Applying filters
-    if (filters.status) {
-      transactionQuery.andWhere('transactions.status = :status', {
-        status: filters.status,
-      });
+    // Apply filters
+    if (filters) {
+      const { status, startDate, endDate } = filters;
+
+      if (status) {
+        transactionQuery.andWhere('transaction.status = :status', { status });
+      }
+
+      if (startDate) {
+        transactionQuery.andWhere('transaction.created_at >= :startDate', {
+          startDate,
+        });
+      }
+
+      if (endDate) {
+        transactionQuery.andWhere('transaction.created_at <= :endDate', {
+          endDate,
+        });
+      }
     }
 
-    if (filters.startDate) {
-      transactionQuery.andWhere('transactions.created_at >= :startDate', {
-        startDate: filters.startDate,
-      });
-    }
-
-    if (filters.endDate) {
-      transactionQuery.andWhere('transactions.created_at <= :endDate', {
-        endDate: filters.endDate,
-      });
-    }
-
-    //Pagination
+    // Pagination
     const [transactions, totalTransactions] = await transactionQuery
       .skip((page - 1) * limit)
       .take(limit)
@@ -167,8 +173,8 @@ export class AccountService {
       .getManyAndCount();
 
     return {
-      transactions: transactions,
-      totalTransactions: totalTransactions,
+      transactions,
+      totalTransactions,
       pages: Math.ceil(totalTransactions / limit),
       page,
       limit,
@@ -176,7 +182,7 @@ export class AccountService {
   }
 
   /**
-   * GET USER ACCOUNT USING USER ID
+   * @description gets the user account using the user Id
    * @param userId
    * @returns
    */
@@ -194,7 +200,7 @@ export class AccountService {
   }
 
   /**
-   * CREATE AND SAVE A TRANSACTION
+   * @description creates and saves a transaction
    * @param createTransactionDto
    * @returns
    */
@@ -205,6 +211,7 @@ export class AccountService {
   }
 
   /**
+   *
    * @param account
    * @returns
    */

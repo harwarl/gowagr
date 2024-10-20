@@ -11,3 +11,4 @@ export enum SWAGGER_SERVERS {
   STAGING = 'staging',
   PRODUCTION = 'production',
 }
+export const SWAGGER_DOC_ENDPOINT = 'api_docs';

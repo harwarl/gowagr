@@ -10,6 +10,7 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { Account } from 'src/account/entities/account.entity';
 import { UpdateUserDto } from './dto/update-user.dto';
 import * as bcrypt from 'bcrypt';
+import { SearchUserDto } from './dto/searchUser.dto';
 
 @Injectable()
 export class UserService {
@@ -18,7 +19,11 @@ export class UserService {
     this.userRepository = this.dataSource.getRepository(User);
   }
 
-  //Find User by Email
+  /**
+   * @description find user by email
+   * @param email
+   * @returns
+   */
   async findUserByEmail(email: string): Promise<UserType> {
     const user = await this.userRepository
       .createQueryBuilder('user')
@@ -27,7 +32,11 @@ export class UserService {
     return user;
   }
 
-  //Find User by Id
+  /**
+   * @description find User by Id
+   * @param id
+   * @returns
+   */
   async findUserById(id: number): Promise<UserType> {
     const user = await this.userRepository
       .createQueryBuilder('user')
@@ -37,8 +46,12 @@ export class UserService {
     return this.userResponse(user);
   }
 
-  //Find User by email
-  async findUserByUsername(username: string): Promise<UserType[]> {
+  /**
+   * @description find User by email
+   * @param username
+   * @returns
+   */
+  async findUserByUsername(searchUserDto: SearchUserDto): Promise<UserType[]> {
     const users = await this.userRepository
       .createQueryBuilder('user')
       .select([
@@ -48,7 +61,9 @@ export class UserService {
         'user.last_name',
         'user.phone_number',
       ])
-      .where('user.username LIKE :username', { username: `${username}%` })
+      .where('user.username LIKE :username', {
+        username: `${searchUserDto.username}%`,
+      })
       .getMany();
     if (!users) {
       throw new NotFoundException('User Not found');
@@ -56,7 +71,11 @@ export class UserService {
     return users;
   }
 
-  //Create a new user
+  /**
+   * @description creates a new user
+   * @param createUserDto
+   * @returns
+   */
   async createUser(createUserDto: CreateUserDto): Promise<UserType> {
     createUserDto.phone_number = this.adjustPhoneNumber(
       createUserDto.phone_number,
@@ -89,6 +108,12 @@ export class UserService {
     }
   }
 
+  /**
+   * @description updates the users information
+   * @param updateUserDto
+   * @param currentUserId
+   * @returns
+   */
   async updateUser(
     updateUserDto: UpdateUserDto,
     currentUserId: number,
@@ -107,6 +132,11 @@ export class UserService {
     return this.findUserById(currentUserId);
   }
 
+  /**
+   * @description Get the User details with balance using the user Id
+   * @param userId
+   * @returns
+   */
   async getUserDetailsWithBalance(userId: number): Promise<UserType> {
     const user = await this.userRepository
       .createQueryBuilder('user')
@@ -121,7 +151,11 @@ export class UserService {
     return this.userResponse(user);
   }
 
-  //converts phone number to +234 format
+  /**
+   * @description Converts phone number to +234 format
+   * @param phoneNumber
+   * @returns
+   */
   adjustPhoneNumber(phoneNumber: string): string {
     //if phonenumber does not starts with 234
     if (!phoneNumber.startsWith('+')) {
@@ -130,6 +164,11 @@ export class UserService {
     return phoneNumber;
   }
 
+  /**
+   * @description creates an account number for the user using their phone numbers
+   * @param phoneNumber
+   * @returns
+   */
   getAccountNumber(phoneNumber: string): string {
     let account_number: string;
     if (!phoneNumber.startsWith('+')) {
@@ -140,6 +179,11 @@ export class UserService {
     return account_number;
   }
 
+  /**
+   * @description cleans the user object by removing the password
+   * @param user
+   * @returns
+   */
   userResponse(user: UserType): UserType {
     delete user.password;
     return user;

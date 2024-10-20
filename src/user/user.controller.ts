@@ -1,9 +1,11 @@
-import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Query, UseGuards, UsePipes } from '@nestjs/common';
 import { UserService } from './user.service';
 import { UserType } from './types/user.type';
 import { JwtAuthGuard } from 'src/auth/guards/jwt.guard';
 import { CurrentUser } from './decorators/currentUser.decorator';
 import { ApiBearerAuth, ApiTags, ApiResponse } from '@nestjs/swagger';
+import { SearchUserDto } from './dto/searchUser.dto';
+import { BackendValidationPipe } from 'src/utils/pipes/backendValidation.pipes';
 
 @ApiTags('User')
 @ApiBearerAuth()
@@ -22,12 +24,13 @@ export class UserController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @UsePipes(BackendValidationPipe)
   @Get('')
   @ApiResponse({ status: 200, description: 'Successful Response' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   async searchUserByUsername(
-    @Query('username') username: string,
+    @Query() searchUserDto: SearchUserDto,
   ): Promise<UserType[]> {
-    return await this.userService.findUserByUsername(username);
+    return await this.userService.findUserByUsername(searchUserDto);
   }
 }
