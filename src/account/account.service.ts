@@ -107,60 +107,6 @@ export class AccountService {
   }
 
   //Get User Transactions
-  async getAccountTransactions(
-    userId: number,
-    query: TransferQueryDto,
-  ): Promise<any> {
-    let page = query?.page || 1;
-    let limit = query?.limit || 10;
-
-    const account = await this.accountRepository
-      .createQueryBuilder('account')
-      .leftJoinAndSelect('account.sent_transactions', 'sent_transaction')
-      .leftJoinAndSelect(
-        'account.recieved_transactions',
-        'received_transaction',
-      )
-      .where('account.userId = :userId', { userId })
-      .getOne();
-
-    if (!account) {
-      throw new NotFoundException(`Account not found for userId: ${userId}`);
-    }
-
-    let transactions = [
-      ...account.sent_transactions.map((transaction) => {
-        return { ...transaction, transaction_type: TransactionType.DEBIT };
-      }),
-      ...account.recieved_transactions.map((transaction) => {
-        return { ...transaction, transaction_type: TransactionType.CREDIT };
-      }),
-    ].sort((a, b) => {
-      return (
-        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-      );
-    });
-
-    let totalTransactions = transactions.length;
-
-    //Manual pagination
-    const startIndex = (page - 1) * limit;
-    const endIndex = startIndex + limit;
-    const paginatedTransactions = transactions.slice(startIndex, endIndex);
-
-    delete account.sent_transactions;
-    delete account.recieved_transactions;
-
-    return {
-      ...account,
-      transactions: paginatedTransactions,
-      totalTransactions: totalTransactions,
-      pages: Math.ceil(totalTransactions / limit),
-      page,
-      limit,
-    };
-  }
-
   async getUserTransactions(
     userId: number,
     query?: TransferQueryDto,
@@ -175,8 +121,7 @@ export class AccountService {
       throw new NotFoundException('User Account not found');
     }
 
-    console.log(userAccount);
-
+    //Start Query
     const transactionQuery = this.transactionRepository
       .createQueryBuilder('transaction')
       .leftJoinAndSelect('transaction.sender', 'sender')
@@ -185,9 +130,26 @@ export class AccountService {
         accountId: userAccount.id,
       });
 
-    if (query) {
+    // Applying filters
+    if (filters.status) {
+      transactionQuery.andWhere('transactions.status = :status', {
+        status: filters.status,
+      });
     }
 
+    if (filters.startDate) {
+      transactionQuery.andWhere('transactions.created_at >= :startDate', {
+        startDate: filters.startDate,
+      });
+    }
+
+    if (filters.endDate) {
+      transactionQuery.andWhere('transactions.created_at <= :endDate', {
+        endDate: filters.endDate,
+      });
+    }
+
+    //Pagination
     const [transactions, totalTransactions] = await transactionQuery
       .skip((page - 1) * limit)
       .take(limit)
