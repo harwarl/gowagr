@@ -11,6 +11,7 @@ import { CreateTransferDto } from './dto/createTransfer.dto';
 import { v4 as uuidv4 } from 'uuid';
 import { CreateTransactionDto } from './dto/createTransaction.dto';
 import { TransactionStatus, TransactionType } from 'src/utils/types';
+import { TransferQueryDto } from './dto/transferQuery.dto';
 
 @Injectable()
 export class AccountService {
@@ -106,26 +107,21 @@ export class AccountService {
   }
 
   //Get User Transactions
-  async getUserTransactions(userId: number): Promise<any> {
-    const accountQuery = this.accountRepository
+  async getUserTransactions(
+    userId: number,
+    query: TransferQueryDto,
+  ): Promise<any> {
+    let page = query?.page || 1;
+    let limit = query?.limit || 10;
+
+    const account = await this.accountRepository
       .createQueryBuilder('account')
       .leftJoinAndSelect('account.sent_transactions', 'sent_transaction')
       .leftJoinAndSelect(
         'account.recieved_transactions',
         'received_transaction',
       )
-      .where('account.userId = :userId', { userId });
-
-    // if (query?.limit && query?.page >= 0) {
-    //   accountQuery.limit(query.limit);
-    //   accountQuery.offset(query.page * query.limit);
-    // } else {
-    //   accountQuery.limit(10);
-    // }
-
-    const account = await accountQuery
-      .orderBy('sent_transaction.created_at', 'DESC')
-      .orderBy('received_transaction.created_at', 'DESC')
+      .where('account.userId = :userId', { userId })
       .getOne();
 
     if (!account) {
@@ -139,18 +135,30 @@ export class AccountService {
       ...account.recieved_transactions.map((transaction) => {
         return { ...transaction, transaction_type: TransactionType.CREDIT };
       }),
-    ];
+    ].sort((a, b) => {
+      return (
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
+    });
 
-    // .sort((a, b) => {
-    //   return (
-    //     new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-    //   );
-    // });
+    let totalTransactions = transactions.length;
+
+    //Manual pagination
+    const startIndex = (page - 1) * limit;
+    const endIndex = startIndex + limit;
+    const paginatedTransactions = transactions.slice(startIndex, endIndex);
 
     delete account.sent_transactions;
     delete account.recieved_transactions;
 
-    return { ...account, transactions };
+    return {
+      ...account,
+      transactions: paginatedTransactions,
+      totalTransactions: totalTransactions,
+      pages: Math.ceil(totalTransactions / limit),
+      page,
+      limit,
+    };
   }
 
   //Get UserID get user Account

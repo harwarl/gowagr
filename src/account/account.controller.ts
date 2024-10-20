@@ -3,6 +3,7 @@ import { AccountService } from './account.service';
 import { CreateTransferDto } from './dto/createTransfer.dto';
 import { JwtAuthGuard } from 'src/auth/guards/jwt.guard';
 import { CurrentUser } from 'src/user/decorators/currentUser.decorator';
+import { TransferQueryDto } from './dto/transferQuery.dto';
 
 @Controller('transfers')
 export class AccountController {
@@ -24,8 +25,11 @@ export class AccountController {
   @Get('')
   async getTransactions(
     @CurrentUser('id') currentUserId: number,
-    @Query() query: any,
+    @Query() paginationQuery: TransferQueryDto,
   ): Promise<any> {
-    return await this.accountService.getUserTransactions(currentUserId);
+    return await this.accountService.getUserTransactions(
+      currentUserId,
+      paginationQuery,
+    );
   }
 }
