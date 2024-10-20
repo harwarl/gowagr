@@ -25,6 +25,11 @@ export class AccountService {
     this.transactionRepository = this.dataSource.getRepository(Transaction);
   }
 
+  /**
+   * Create a new Transfer
+   * @param createTransferDto
+   * @returns
+   */
   async createTransfer(createTransferDto: CreateTransferDto): Promise<any> {
     if (createTransferDto.sender_id === createTransferDto.recipient_id) {
       throw new BadRequestException('You can transfer to yourself');
@@ -106,7 +111,12 @@ export class AccountService {
     }
   }
 
-  //Get User Transactions
+  /**
+   * GET User Transactions
+   * @param userId
+   * @param query
+   * @returns
+   */
   async getUserTransactions(
     userId: number,
     query?: TransferQueryDto,
@@ -165,7 +175,11 @@ export class AccountService {
     };
   }
 
-  //Get UserID get user Account
+  /**
+   * GET USER ACCOUNT USING USER ID
+   * @param userId
+   * @returns
+   */
   async getAccountByUserId(userId: number): Promise<any> {
     const account = await this.accountRepository
       .createQueryBuilder('account')
@@ -179,12 +193,21 @@ export class AccountService {
     return account;
   }
 
+  /**
+   * CREATE AND SAVE A TRANSACTION
+   * @param createTransactionDto
+   * @returns
+   */
   async createTransaction(
     createTransactionDto: CreateTransactionDto,
   ): Promise<Transaction> {
     return await this.transactionRepository.save(createTransactionDto);
   }
 
+  /**
+   * @param account
+   * @returns
+   */
   accountReponse(account: Account) {
     return {
       success: true,

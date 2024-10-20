@@ -2,11 +2,16 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { GLOBAL_PREFIX } from 'src/utils/constants';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { ValidationPipe } from '@nestjs/common';
+import { BackendValidationPipe } from './utils/pipes/backendValidation.pipes';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.enableCors({ origin: '*' });
   app.setGlobalPrefix(GLOBAL_PREFIX);
+  // app.useGlobalPipes(new ValidationPipe());
+  app.useGlobalPipes(new BackendValidationPipe());
+
   //Set up Swagger
   const config = new DocumentBuilder()
     .setTitle('GoWagr Simple Money Transfer System')

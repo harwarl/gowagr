@@ -21,7 +21,7 @@ export class CreateUserDto {
   })
   @IsString()
   last_name: string;
-  
+
   @ApiProperty({
     example: 'JohnDoe@JohnDoe.com',
     required: true,
@@ -47,8 +47,7 @@ export class CreateUserDto {
     example: '08123456789',
     required: true,
   })
-  @IsString()
   @IsNumberString()
-  @Length(11, 13)
+  @Length(11, 14)
   phone_number: string;
 }
