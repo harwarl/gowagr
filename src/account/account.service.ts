@@ -107,7 +107,7 @@ export class AccountService {
   }
 
   //Get User Transactions
-  async getUserTransactions(
+  async getAccountTransactions(
     userId: number,
     query: TransferQueryDto,
   ): Promise<any> {
@@ -154,6 +154,48 @@ export class AccountService {
     return {
       ...account,
       transactions: paginatedTransactions,
+      totalTransactions: totalTransactions,
+      pages: Math.ceil(totalTransactions / limit),
+      page,
+      limit,
+    };
+  }
+
+  async getUserTransactions(
+    userId: number,
+    query?: TransferQueryDto,
+  ): Promise<any> {
+    let page = query?.page || 1;
+    let limit = query?.limit || 10;
+    let filters = query?.filters;
+
+    //Get User Account
+    const userAccount = await this.getAccountByUserId(userId);
+    if (!userAccount) {
+      throw new NotFoundException('User Account not found');
+    }
+
+    console.log(userAccount);
+
+    const transactionQuery = this.transactionRepository
+      .createQueryBuilder('transaction')
+      .leftJoinAndSelect('transaction.sender', 'sender')
+      .leftJoinAndSelect('transaction.receiver', 'receiver')
+      .where('sender.id = :accountId OR receiver.id = :accountId', {
+        accountId: userAccount.id,
+      });
+
+    if (query) {
+    }
+
+    const [transactions, totalTransactions] = await transactionQuery
+      .skip((page - 1) * limit)
+      .take(limit)
+      .orderBy('transaction.created_at', 'DESC')
+      .getManyAndCount();
+
+    return {
+      transactions: transactions,
       totalTransactions: totalTransactions,
       pages: Math.ceil(totalTransactions / limit),
       page,
