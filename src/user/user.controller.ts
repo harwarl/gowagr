@@ -1,27 +1,20 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Body,
-  Patch,
-  Param,
-  Query,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 import { UserService } from './user.service';
 import { UserType } from './types/user.type';
 import { JwtAuthGuard } from 'src/auth/guards/jwt.guard';
 import { CurrentUser } from './decorators/currentUser.decorator';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiTags, ApiResponse } from '@nestjs/swagger';
 
 @ApiTags('User')
+@ApiBearerAuth()
 @Controller('users')
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
   @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
   @Get('me')
+  @ApiResponse({ status: 200, description: 'Successful Response' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   async getUserBalance(
     @CurrentUser('id') currentUserId: number,
   ): Promise<UserType> {
@@ -29,16 +22,12 @@ export class UserController {
   }
 
   @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
   @Get('')
+  @ApiResponse({ status: 200, description: 'Successful Response' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   async searchUserByUsername(
     @Query('username') username: string,
   ): Promise<UserType[]> {
     return await this.userService.findUserByUsername(username);
   }
-
-  // @Get('test')
-  // testEndpoint() {
-  //   return { ping: 'Pong' };
-  // }
 }

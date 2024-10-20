@@ -4,16 +4,18 @@ import { CreateTransferDto } from './dto/createTransfer.dto';
 import { JwtAuthGuard } from 'src/auth/guards/jwt.guard';
 import { CurrentUser } from 'src/user/decorators/currentUser.decorator';
 import { TransferQueryDto } from './dto/transferQuery.dto';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiTags, ApiResponse } from '@nestjs/swagger';
 
 @ApiTags('Tranfer')
+@ApiBearerAuth()
 @Controller('transfers')
 export class AccountController {
   constructor(private readonly accountService: AccountService) {}
 
   @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
   @Post('')
+  @ApiResponse({ status: 200, description: 'Successful Response' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   async createTransfer(
     @CurrentUser('id') currentUserId: number,
     @Body() createTransferDto: CreateTransferDto,
@@ -25,8 +27,9 @@ export class AccountController {
   }
 
   @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
   @Get('')
+  @ApiResponse({ status: 200, description: 'Successful Response' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   async getTransactions(
     @CurrentUser('id') currentUserId: number,
     @Query() paginationQuery: TransferQueryDto,
