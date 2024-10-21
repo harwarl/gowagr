@@ -9,6 +9,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { dataSourceOptions } from './database/data-source';
 import { CacheModule, CacheOptions } from '@nestjs/cache-manager';
 import { redisStore } from 'cache-manager-redis-store';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
 
 @Module({
   imports: [
@@ -17,9 +19,6 @@ import { redisStore } from 'cache-manager-redis-store';
       envFilePath: './.env',
     }),
     TypeOrmModule.forRoot(dataSourceOptions),
-    AuthModule,
-    UserModule,
-    AccountModule,
     CacheModule.registerAsync({
       inject: [ConfigService],
       isGlobal: true,
@@ -41,8 +40,34 @@ import { redisStore } from 'cache-manager-redis-store';
         }
       },
     }),
+    ThrottlerModule.forRoot([
+      {
+        name: 'short',
+        ttl: 1000,
+        limit: 3,
+      },
+      {
+        name: 'medium',
+        ttl: 10000,
+        limit: 20,
+      },
+      {
+        name: 'long',
+        ttl: 60000,
+        limit: 100,
+      },
+    ]),
+    AuthModule,
+    UserModule,
+    AccountModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
+  ],
 })
 export class AppModule {}
