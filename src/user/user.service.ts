@@ -11,6 +11,7 @@ import { Account } from 'src/account/entities/account.entity';
 import { UpdateUserDto } from './dto/update-user.dto';
 import * as bcrypt from 'bcrypt';
 import { SearchUserDto } from './dto/searchUser.dto';
+import { IUserResponse } from 'src/utils/types';
 
 @Injectable()
 export class UserService {
@@ -43,7 +44,9 @@ export class UserService {
       .where('user.id = :id', { id })
       .getOne();
 
-    return this.userResponse(user);
+    delete user.password;
+
+    return user;
   }
 
   /**
@@ -51,7 +54,9 @@ export class UserService {
    * @param username
    * @returns
    */
-  async findUserByUsername(searchUserDto: SearchUserDto): Promise<UserType[]> {
+  async findUserByUsername(
+    searchUserDto: SearchUserDto,
+  ): Promise<IUserResponse> {
     const users = await this.userRepository
       .createQueryBuilder('user')
       .select([
@@ -68,7 +73,10 @@ export class UserService {
     if (!users) {
       throw new NotFoundException('User Not found');
     }
-    return users;
+    return {
+      success: true,
+      user: users,
+    };
   }
 
   /**
@@ -76,7 +84,7 @@ export class UserService {
    * @param createUserDto
    * @returns
    */
-  async createUser(createUserDto: CreateUserDto): Promise<UserType> {
+  async createUser(createUserDto: CreateUserDto): Promise<IUserResponse> {
     createUserDto.phone_number = this.adjustPhoneNumber(
       createUserDto.phone_number,
     );
@@ -117,7 +125,7 @@ export class UserService {
   async updateUser(
     updateUserDto: UpdateUserDto,
     currentUserId: number,
-  ): Promise<UserType> {
+  ): Promise<IUserResponse> {
     const user = await this.findUserById(currentUserId);
     if (!user) {
       throw new NotFoundException(`User with ID ${currentUserId} not found`);
@@ -129,7 +137,9 @@ export class UserService {
       .where('user.id = :id', { id: currentUserId })
       .execute();
 
-    return this.findUserById(currentUserId);
+    const updatedUser = await this.findUserById(currentUserId);
+
+    return this.userResponse(updatedUser);
   }
 
   /**
@@ -137,7 +147,7 @@ export class UserService {
    * @param userId
    * @returns
    */
-  async getUserDetailsWithBalance(userId: number): Promise<UserType> {
+  async getUserDetailsWithBalance(userId: number): Promise<IUserResponse> {
     const user = await this.userRepository
       .createQueryBuilder('user')
       .innerJoinAndSelect('user.account', 'account')
@@ -184,8 +194,8 @@ export class UserService {
    * @param user
    * @returns
    */
-  userResponse(user: UserType): UserType {
+  userResponse(user: UserType): IUserResponse {
     delete user.password;
-    return user;
+    return { success: true, user };
   }
 }

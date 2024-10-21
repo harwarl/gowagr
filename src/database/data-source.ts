@@ -19,23 +19,23 @@ export const dataSourceOptions: DataSourceOptions = {
   synchronize: false,
   migrations: [__dirname + '/../migrations/*{.ts,.js}'],
   migrationsTableName: 'migration_table',
-  logging: true,
-  cache: {
-    type: 'redis',
-    options: {
-      host:
-        process.env['NODE_ENV'] === 'DEV'
-          ? '127.0.0.1'
-          : process.env['REDIS_HOST'],
-      port: parseInt(process.env['REDIS_PORT'], 10) ?? 6379,
-      username:
-        process.env['NODE_ENV'] === 'DEV' ? '' : process.env['REDIS_USERNAME'],
-      password:
-        process.env['NODE_ENV'] === 'DEV'
-          ? 'gowagr'
-          : process.env['REDIS_PASS'],
-    },
-  },
+  // logging: true,
+  // cache: {
+  //   type: 'redis',
+  //   options: {
+  //     host:
+  //       process.env['NODE_ENV'] === 'DEV'
+  //         ? '127.0.0.1'
+  //         : process.env['REDIS_HOST'],
+  //     port: parseInt(process.env['REDIS_PORT'], 10) ?? 6379,
+  //     username:
+  //       process.env['NODE_ENV'] === 'DEV' ? '' : process.env['REDIS_USERNAME'],
+  //     password:
+  //       process.env['NODE_ENV'] === 'DEV'
+  //         ? 'gowagr'
+  //         : process.env['REDIS_PASS'],
+  //   },
+  // },
 };
 
 const PostgresDataSource = new DataSource(dataSourceOptions);

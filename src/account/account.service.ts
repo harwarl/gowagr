@@ -40,26 +40,35 @@ export class AccountService {
    * @returns
    */
   async createTransfer(createTransferDto: CreateTransferDto): Promise<any> {
-    if (createTransferDto.sender_id === createTransferDto.recipient_id) {
-      throw new BadRequestException('You can transfer to yourself');
-    }
-
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
 
     try {
-      // Get the senders Account.
-      const sendersAccount = await this.getAccountByUserId(
+      // Get the sender's Account using the sender's user ID.
+      const sendersAccount: Account = await this.getAccountByUserId(
         createTransferDto.sender_id,
       );
 
-      // Get the recipient Account.
-      const recipientAccount = await this.getAccountByUserId(
-        createTransferDto.recipient_id,
-      );
+      // Get the recipient Account using the recipient account number.
+      const recipientAccount: Account = await this.accountRepository
+        .createQueryBuilder('account')
+        .leftJoinAndSelect('account.user', 'user')
+        .where('account.account_number = :account_number', {
+          account_number: createTransferDto.recipient_account_number,
+        })
+        .getOne();
 
-      //   check if the sender has sufficient Balance and save a failed transaction
+      if (!recipientAccount) {
+        throw new NotFoundException('Recipient account not found');
+      }
+
+      // Prevent self-transfer
+      if (sendersAccount.account_number === recipientAccount.account_number) {
+        throw new BadRequestException('You cannot transfer to yourself');
+      }
+
+      // Check if the sender has sufficient balance
       if (sendersAccount.balance < createTransferDto.amount) {
         await this.createTransaction({
           sender: sendersAccount,
@@ -72,32 +81,38 @@ export class AccountService {
         throw new BadRequestException('Insufficient Balance');
       }
 
-      //Deduct Amount from the sender
-      sendersAccount.balance -= createTransferDto.amount;
-
-      //Add Amount to the recipient
-      recipientAccount.balance =
-        parseFloat(recipientAccount.balance) + createTransferDto.amount;
-
-      //update the senders Account
-      await queryRunner.manager.update(
-        Account,
-        { id: sendersAccount.balance },
-        {
-          balance: sendersAccount.balance,
-        },
+      console.log({ sendersAccount, recipientAccount });
+      console.log(
+        typeof sendersAccount.balance,
+        typeof recipientAccount.balance,
       );
 
-      // Update the recipient balance
+      // Deduct amount from the sender and add to the recipient
+      sendersAccount.balance =
+        parseFloat(sendersAccount.balance.toString()) -
+        createTransferDto.amount;
+
+      recipientAccount.balance =
+        parseFloat(recipientAccount.balance.toString()) +
+        createTransferDto.amount;
+
+      // Update sender and recipient accounts
+      await queryRunner.manager.update(
+        Account,
+        { id: sendersAccount.id },
+        { balance: sendersAccount.balance },
+      );
       await queryRunner.manager.update(
         Account,
         { id: recipientAccount.id },
-        {
-          balance: recipientAccount.balance,
-        },
+        { balance: recipientAccount.balance },
       );
 
-      //save the transaction
+      // Invalidate caches
+      const cacheKey = `account_${createTransferDto.sender_id}`;
+      await this.cacheManager.del(cacheKey);
+
+      // Save the successful transaction
       const transaction = await this.createTransaction({
         sender: sendersAccount,
         receiver: recipientAccount,
@@ -107,15 +122,16 @@ export class AccountService {
         created_at: new Date(),
       });
 
-      // commit the transaction
+      // Commit the transaction
       await queryRunner.commitTransaction();
       return { success: true, transaction };
     } catch (error) {
-      //rollback the transaction
+      // Rollback transaction if any error occurs
       await queryRunner.rollbackTransaction();
-      console.log('Transfer Failed:', error);
-      throw new Error(`Failed to execute transaction`);
+      console.log('Transfer Failed:', error.message);
+      throw error;
     } finally {
+      // Release the queryRunner after transaction completes or fails
       await queryRunner.release();
     }
   }
@@ -194,7 +210,7 @@ export class AccountService {
       limit,
     };
 
-    await this.cacheManager.set(cacheKey, result, 60 * 5);
+    await this.cacheManager.set(cacheKey, result, 60 * 1);
     return result;
   }
 
@@ -224,7 +240,7 @@ export class AccountService {
     }
 
     // Cache the account before returning
-    await this.cacheManager.set(cacheKey, account, 60 * 5);
+    await this.cacheManager.set(cacheKey, account, 10);
 
     return account;
   }

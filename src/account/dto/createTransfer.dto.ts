@@ -1,4 +1,4 @@
-import { IsNumber, IsNotEmpty, IsOptional } from 'class-validator';
+import { IsNumber, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateTransferDto {
@@ -17,9 +17,9 @@ export class CreateTransferDto {
     example: 456,
     required: true,
   })
-  @IsNumber()
+  @IsString()
   @IsNotEmpty()
-  recipient_id: number;
+  recipient_account_number: string;
 
   @ApiProperty({
     description: 'The amount of money to transfer.',

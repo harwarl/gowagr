@@ -4,6 +4,7 @@ import { UserService } from 'src/user/user.service';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import { CreateUserDto } from 'src/user/dto/create-user.dto';
+import { IAuthResponse, IUserResponse } from 'src/utils/types';
 
 @Injectable()
 export class AuthService {
@@ -26,23 +27,31 @@ export class AuthService {
     return this.userService.userResponse(user);
   }
 
-  async register(createUserDto: CreateUserDto): Promise<UserType> {
+  async register(createUserDto: CreateUserDto): Promise<IAuthResponse> {
     const user: UserType = await this.userService.findUserByEmail(
       createUserDto.email,
     );
     if (user) {
       throw new BadRequestException('Email already exists');
     }
-    const newUser: UserType = await this.userService.createUser(createUserDto);
-    return newUser;
+    const newUser: IUserResponse =
+      await this.userService.createUser(createUserDto);
+    return this.login(newUser.user);
   }
 
-  async login(user: any) {
+  async login(user: any): Promise<IAuthResponse> {
     const payload = { email: user.email, id: user.id };
-    return { access_token: this.getToken(payload) };
+    return this.authResponse(this.getToken(payload));
   }
 
   getToken(payload: any) {
     return this.jwtService.sign(payload);
+  }
+
+  authResponse(access_token: string): IAuthResponse {
+    return {
+      success: true,
+      access_token,
+    };
   }
 }

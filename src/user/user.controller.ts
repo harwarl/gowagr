@@ -6,6 +6,7 @@ import { CurrentUser } from './decorators/currentUser.decorator';
 import { ApiBearerAuth, ApiTags, ApiResponse } from '@nestjs/swagger';
 import { SearchUserDto } from './dto/searchUser.dto';
 import { BackendValidationPipe } from 'src/utils/pipes/backendValidation.pipes';
+import { IUserResponse } from 'src/utils/types';
 
 @ApiTags('User')
 @ApiBearerAuth()
@@ -19,7 +20,7 @@ export class UserController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   async getUserBalance(
     @CurrentUser('id') currentUserId: number,
-  ): Promise<UserType> {
+  ): Promise<IUserResponse> {
     return await this.userService.getUserDetailsWithBalance(currentUserId);
   }
 
@@ -30,7 +31,7 @@ export class UserController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   async searchUserByUsername(
     @Query() searchUserDto: SearchUserDto,
-  ): Promise<UserType[]> {
+  ): Promise<IUserResponse> {
     return await this.userService.findUserByUsername(searchUserDto);
   }
 }

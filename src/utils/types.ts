@@ -1,5 +1,6 @@
 import { Account } from 'src/account/entities/account.entity';
 import { Transaction } from 'src/account/entities/transaction.entity';
+import { UserType } from 'src/user/types/user.type';
 
 export interface IUser {
   id: number;
@@ -51,4 +52,14 @@ export interface ITransactions {
   pages: number;
   page: number;
   limit: number;
+}
+
+export interface IAuthResponse {
+  success: boolean;
+  access_token: string;
+}
+
+export interface IUserResponse {
+  success: boolean;
+  user: UserType | UserType[];
 }
