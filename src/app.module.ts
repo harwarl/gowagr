@@ -8,7 +8,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { dataSourceOptions } from './database/data-source';
 import { CacheModule, CacheOptions } from '@nestjs/cache-manager';
-import { redisStore } from 'cache-manager-ioredis-yet';
+import { redisStore } from 'cache-manager-redis-store';
 
 @Module({
   imports: [
@@ -26,14 +26,19 @@ import { redisStore } from 'cache-manager-ioredis-yet';
       useFactory: async (
         configService: ConfigService,
       ): Promise<CacheOptions<any>> => {
-        return {
-          store: await redisStore({
-            host: configService.get<string>('REDIS_HOST') ?? 'localhost',
-            port: parseInt(configService.get<string>('REDIS_PORT'), 10) ?? 6379,
-            password: configService.get<string>('REDIS_PASS'),
-          }),
-          ttl: 60 * 5,
+        const redisConfig = {
+          url: `redis://${configService.get<string>('REDIS_USERNAME')}:${configService.get<string>('REDIS_PASS')}@${configService.get<string>('REDIS_HOST')}:${configService.get<string>('REDIS_PORT')}`,
         };
+        try {
+          const store = await redisStore(redisConfig);
+          return {
+            store,
+            ttl: 60 * 5,
+          };
+        } catch (error) {
+          console.error('Failed to initialize Redis store:', error);
+          throw error;
+        }
       },
     }),
   ],

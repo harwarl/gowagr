@@ -19,7 +19,7 @@ export const dataSourceOptions: DataSourceOptions = {
   synchronize: false,
   migrations: [__dirname + '/../migrations/*{.ts,.js}'],
   migrationsTableName: 'migration_table',
-  // logging: true,
+  logging: true,
   cache: {
     type: 'redis',
     options: {

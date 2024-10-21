@@ -1,6 +1,5 @@
-import { Type } from '@nestjs/common';
+import { Account } from 'src/account/entities/account.entity';
 import { Transaction } from 'src/account/entities/transaction.entity';
-import { User } from 'src/user/entities/user.entity';
 
 export interface IUser {
   id: number;
@@ -39,4 +38,17 @@ export enum TransactionType {
 export enum TransactionStatus {
   COMPLETED = 'completed',
   FAILED = 'failed',
+}
+
+export enum CacheKeys {
+  GET_TRANSACTION_KEY = 'get:transactions',
+  GET_USER_BALANCE = 'get:balance',
+}
+
+export interface ITransactions {
+  transactions: Transaction[];
+  totalTransactions: number;
+  pages: number;
+  page: number;
+  limit: number;
 }

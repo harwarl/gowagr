@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Injectable,
   NotFoundException,
+  Inject,
 } from '@nestjs/common';
 import { DataSource, Repository } from 'typeorm';
 import { Account } from './entities/account.entity';
@@ -10,16 +11,24 @@ import { UserService } from 'src/user/user.service';
 import { CreateTransferDto } from './dto/createTransfer.dto';
 import { v4 as uuidv4 } from 'uuid';
 import { CreateTransactionDto } from './dto/createTransaction.dto';
-import { TransactionStatus, TransactionType } from 'src/utils/types';
+import {
+  CacheKeys,
+  ITransaction,
+  ITransactions,
+  TransactionStatus,
+} from 'src/utils/types';
 import { TransferQueryDto } from './dto/transferQuery.dto';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { Cache } from 'cache-manager';
 
 @Injectable()
 export class AccountService {
   private accountRepository: Repository<Account>;
   private transactionRepository: Repository<Transaction>;
+
   constructor(
     private dataSource: DataSource,
-    private userService: UserService,
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {
     this.accountRepository = this.dataSource.getRepository(Account);
     this.transactionRepository = this.dataSource.getRepository(Transaction);
@@ -120,19 +129,23 @@ export class AccountService {
   async getUserTransactions(
     userId: number,
     query?: TransferQueryDto,
-  ): Promise<{
-    transactions: Transaction[];
-    totalTransactions: number;
-    pages: number;
-    page: number;
-    limit: number;
-  }> {
+  ): Promise<ITransactions> {
     const { page = 1, limit = 10, filters } = query || {};
 
     // Get User Account
     const userAccount = await this.getAccountByUserId(userId);
     if (!userAccount) {
       throw new NotFoundException('User Account not found');
+    }
+
+    // Construct cache key
+    const cacheKey = `${CacheKeys.GET_TRANSACTION_KEY}_${userId}_${page}_${limit}_${JSON.stringify(filters)}`;
+
+    // Attempt to retrieve cached value
+    const cachedValue = await this.cacheManager.get<ITransactions>(cacheKey);
+
+    if (cachedValue) {
+      return cachedValue;
     }
 
     // Start Query
@@ -172,13 +185,17 @@ export class AccountService {
       .orderBy('transaction.created_at', 'DESC')
       .getManyAndCount();
 
-    return {
+    // Cache the result before returning
+    const result = {
       transactions,
       totalTransactions,
       pages: Math.ceil(totalTransactions / limit),
       page,
       limit,
     };
+
+    await this.cacheManager.set(cacheKey, result, 60 * 5);
+    return result;
   }
 
   /**
@@ -187,6 +204,15 @@ export class AccountService {
    * @returns
    */
   async getAccountByUserId(userId: number): Promise<any> {
+    // Create a cache key
+    const cacheKey = `account_${userId}`;
+
+    const cachedAccount = await this.cacheManager.get(cacheKey);
+    if (cachedAccount) {
+      return cachedAccount;
+    }
+
+    // If not in cache, query the database
     const account = await this.accountRepository
       .createQueryBuilder('account')
       .leftJoinAndSelect('account.user', 'user')
@@ -196,6 +222,10 @@ export class AccountService {
     if (!account) {
       throw new NotFoundException(`Account for User Id ${userId} not found`);
     }
+
+    // Cache the account before returning
+    await this.cacheManager.set(cacheKey, account, 60 * 5);
+
     return account;
   }
 
@@ -208,17 +238,5 @@ export class AccountService {
     createTransactionDto: CreateTransactionDto,
   ): Promise<Transaction> {
     return await this.transactionRepository.save(createTransactionDto);
-  }
-
-  /**
-   *
-   * @param account
-   * @returns
-   */
-  accountReponse(account: Account) {
-    return {
-      success: true,
-      account,
-    };
   }
 }
