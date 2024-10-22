@@ -35,6 +35,25 @@ services:
     volumes:
       - cache:/data
 
+  # gowagr:
+  #   build: .
+  #   environment:
+  #     NODE_ENV: PROD
+  #     DB_HOST: postgres
+  #     DB_PORT: 5432
+  #     DB_USERNAME: postgres
+  #     DB_PASSWORD: root
+  #     DB_DATABASE: gowagr_dev
+  #     REDIS_HOST: cache
+  #     REDIS_PORT: 6379
+  #     REDIS_USERNAME: ''
+  #     REDIS_PASS: gowagr
+  #   depends_on:
+  #     - postgres
+  #     - cache
+  #   ports:
+  #     - '3000:3000'
+
 volumes:
   postgres-data:
     driver: local

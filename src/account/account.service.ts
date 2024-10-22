@@ -4,7 +4,7 @@ import {
   NotFoundException,
   Inject,
 } from '@nestjs/common';
-import { DataSource, Repository } from 'typeorm';
+import { Brackets, DataSource, Repository } from 'typeorm';
 import { Account } from './entities/account.entity';
 import { Transaction } from '../account/entities/transaction.entity';
 import { UserService } from '../user/user.service';
@@ -111,6 +111,9 @@ export class AccountService {
         created_at: new Date(),
       });
 
+      delete transaction.sender;
+      delete transaction.receiver;
+
       // Commit the transaction
       await queryRunner.commitTransaction();
       return { success: true, transaction };
@@ -143,16 +146,6 @@ export class AccountService {
       throw new NotFoundException('User Account not found');
     }
 
-    // Construct cache key
-    const cacheKey = `${CacheKeys.GET_TRANSACTION_KEY}_${userId}_${page}_${limit}_${JSON.stringify(filters)}`;
-
-    // Attempt to retrieve cached value
-    const cachedValue = await this.cacheManager.get<ITransactions>(cacheKey);
-
-    if (cachedValue) {
-      return cachedValue;
-    }
-
     // Start Query
     const transactionQuery = this.transactionRepository
       .createQueryBuilder('transaction')
@@ -162,23 +155,24 @@ export class AccountService {
         accountId: userAccount.id,
       });
 
-    // Apply filters
+    //Adding filters
     if (filters) {
-      const { status, startDate, endDate } = filters;
-
-      if (status) {
-        transactionQuery.andWhere('transaction.status = :status', { status });
-      }
+      const { startDate, endDate } = filters;
 
       if (startDate) {
+        const start = new Date(startDate);
+        start.setHours(0, 0, 0, 0);
         transactionQuery.andWhere('transaction.created_at >= :startDate', {
-          startDate,
+          startDate: start.toISOString(),
         });
       }
 
       if (endDate) {
-        transactionQuery.andWhere('transaction.created_at <= :endDate', {
-          endDate,
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+
+        transactionQuery.andWhere('transaction.created_at >= :endDate', {
+          endDate: end.toISOString(),
         });
       }
     }
@@ -190,7 +184,6 @@ export class AccountService {
       .orderBy('transaction.created_at', 'DESC')
       .getManyAndCount();
 
-    // Cache the result before returning
     const result = {
       transactions,
       totalTransactions,
@@ -199,7 +192,6 @@ export class AccountService {
       limit,
     };
 
-    await this.cacheManager.set(cacheKey, result, 60 * 1);
     return result;
   }
 

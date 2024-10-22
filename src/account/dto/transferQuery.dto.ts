@@ -34,7 +34,6 @@ export class TransferQueryDto {
   })
   @IsOptional()
   filters?: {
-    status?: TransactionStatus;
     startDate?: string;
     endDate?: string;
   };
