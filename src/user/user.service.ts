@@ -7,11 +7,11 @@ import { UserType } from './types/user.type';
 import { DataSource, Repository } from 'typeorm';
 import { User } from './entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
-import { Account } from 'src/account/entities/account.entity';
+import { Account } from '../account/entities/account.entity';
 import { UpdateUserDto } from './dto/update-user.dto';
 import * as bcrypt from 'bcrypt';
 import { SearchUserDto } from './dto/searchUser.dto';
-import { IUserResponse } from 'src/utils/types';
+import { IUserResponse } from '../utils/types';
 
 @Injectable()
 export class UserService {
@@ -36,7 +36,7 @@ export class UserService {
   /**
    * @description find User by Id
    * @param id
-   * @returns
+   * @returns user
    */
   async findUserById(id: number): Promise<UserType> {
     const user = await this.userRepository
@@ -52,7 +52,7 @@ export class UserService {
   /**
    * @description find User by email
    * @param username
-   * @returns
+   * @returns user
    */
   async findUserByUsername(
     searchUserDto: SearchUserDto,
@@ -82,7 +82,7 @@ export class UserService {
   /**
    * @description creates a new user
    * @param createUserDto
-   * @returns
+   * @returns user details
    */
   async createUser(createUserDto: CreateUserDto): Promise<IUserResponse> {
     createUserDto.phone_number = this.adjustPhoneNumber(
@@ -120,7 +120,7 @@ export class UserService {
    * @description updates the users information
    * @param updateUserDto
    * @param currentUserId
-   * @returns
+   * @returns user
    */
   async updateUser(
     updateUserDto: UpdateUserDto,
@@ -145,7 +145,7 @@ export class UserService {
   /**
    * @description Get the User details with balance using the user Id
    * @param userId
-   * @returns
+   * @returns UserWithAccountBalance
    */
   async getUserDetailsWithBalance(userId: number): Promise<IUserResponse> {
     const user = await this.userRepository
@@ -164,7 +164,7 @@ export class UserService {
   /**
    * @description Converts phone number to +234 format
    * @param phoneNumber
-   * @returns
+   * @returns adjustedPhoneNumber +2349122323233
    */
   adjustPhoneNumber(phoneNumber: string): string {
     //if phonenumber does not starts with 234
@@ -177,7 +177,7 @@ export class UserService {
   /**
    * @description creates an account number for the user using their phone numbers
    * @param phoneNumber
-   * @returns
+   * @returns account_number
    */
   getAccountNumber(phoneNumber: string): string {
     let account_number: string;
@@ -192,7 +192,7 @@ export class UserService {
   /**
    * @description cleans the user object by removing the password
    * @param user
-   * @returns
+   * @returns IUserReponse
    */
   userResponse(user: UserType): IUserResponse {
     delete user.password;

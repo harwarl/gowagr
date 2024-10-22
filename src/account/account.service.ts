@@ -6,17 +6,12 @@ import {
 } from '@nestjs/common';
 import { DataSource, Repository } from 'typeorm';
 import { Account } from './entities/account.entity';
-import { Transaction } from 'src/account/entities/transaction.entity';
-import { UserService } from 'src/user/user.service';
+import { Transaction } from '../account/entities/transaction.entity';
+import { UserService } from '../user/user.service';
 import { CreateTransferDto } from './dto/createTransfer.dto';
 import { v4 as uuidv4 } from 'uuid';
 import { CreateTransactionDto } from './dto/createTransaction.dto';
-import {
-  CacheKeys,
-  ITransaction,
-  ITransactions,
-  TransactionStatus,
-} from 'src/utils/types';
+import { CacheKeys, ITransactions, TransactionStatus } from '../utils/types';
 import { TransferQueryDto } from './dto/transferQuery.dto';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Cache } from 'cache-manager';
@@ -80,12 +75,6 @@ export class AccountService {
         });
         throw new BadRequestException('Insufficient Balance');
       }
-
-      console.log({ sendersAccount, recipientAccount });
-      console.log(
-        typeof sendersAccount.balance,
-        typeof recipientAccount.balance,
-      );
 
       // Deduct amount from the sender and add to the recipient
       sendersAccount.balance =

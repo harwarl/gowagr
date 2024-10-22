@@ -9,11 +9,11 @@ import {
 } from '@nestjs/common';
 import { AccountService } from './account.service';
 import { CreateTransferDto } from './dto/createTransfer.dto';
-import { JwtAuthGuard } from 'src/auth/guards/jwt.guard';
-import { CurrentUser } from 'src/user/decorators/currentUser.decorator';
+import { JwtAuthGuard } from '../auth/guards/jwt.guard';
+import { CurrentUser } from '../user/decorators/currentUser.decorator';
 import { TransferQueryDto } from './dto/transferQuery.dto';
 import { ApiBearerAuth, ApiTags, ApiResponse } from '@nestjs/swagger';
-import { BackendValidationPipe } from 'src/utils/pipes/backendValidation.pipes';
+import { BackendValidationPipe } from '../utils/pipes/backendValidation.pipes';
 
 @ApiTags('Tranfer')
 @ApiBearerAuth()

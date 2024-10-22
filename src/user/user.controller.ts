@@ -1,12 +1,12 @@
 import { Controller, Get, Query, UseGuards, UsePipes } from '@nestjs/common';
 import { UserService } from './user.service';
 import { UserType } from './types/user.type';
-import { JwtAuthGuard } from 'src/auth/guards/jwt.guard';
+import { JwtAuthGuard } from '../auth/guards/jwt.guard';
 import { CurrentUser } from './decorators/currentUser.decorator';
 import { ApiBearerAuth, ApiTags, ApiResponse } from '@nestjs/swagger';
 import { SearchUserDto } from './dto/searchUser.dto';
-import { BackendValidationPipe } from 'src/utils/pipes/backendValidation.pipes';
-import { IUserResponse } from 'src/utils/types';
+import { BackendValidationPipe } from '../utils/pipes/backendValidation.pipes';
+import { IUserResponse } from '../utils/types';
 
 @ApiTags('User')
 @ApiBearerAuth()
